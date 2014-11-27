@@ -3,9 +3,22 @@
 using namespace sf;
 
 float offsetX=0, offsetY=0;
+int tilesize=16;
 
 const int H = 25;
 const int W = 150;
+
+const int windowW = 600;
+const int windowH = 400;
+
+const float gravitystrength = 0.0005;
+const float movespeedX = 0.1;
+const float movespeedY = 0.4;
+const float animationspeed = 0.005;
+
+int playersize[4] = {100,64,55,57};
+int npcsize[4] = {18,58,48,21};
+int enviromentconsts[4][4] = {{0,25,16,16},{27,23,64,32},{0,50,32,49},{0,0,16,16}}
 
 String TileMap[H] = {
 
@@ -41,58 +54,59 @@ String TileMap[H] = {
 class Player{
 public:
 
+const int tileinanim = 7;
 float dx,dy;
 FloatRect rect;
 bool onGround;
 Sprite sprite;
 float currentFrame;
 
-	Player(Texture &image)
+	Player(Texture &image)                // constructor
 	{
 		sprite.setTexture(image);
-		rect = FloatRect(100,64,55,57);
-
+		rect = FloatRect(playersize[0],playersize[1],playersize[2],playersize[3]);
 		dx=dy=0;
 		currentFrame=0;
 	}
 
-	void update(float time)
+	void update(float time)               // movements + collisions
 	{
 		rect.left +=dx*time;
-		Collision(0);
-		if (!onGround) dy=dy+0.0005*time;
+		Collision("x");                     // collision|X
+		
+		if (!onGround) dy=dy+gravitystrength*time; // gravity apply
 		rect.top +=dy*time;
 		onGround=false;
-		Collision(1);
-		currentFrame += 0.005*time;
-		if (currentFrame > 7) currentFrame -=7;
+		Collision("y");                     // collision|Y
 		
-		if (dx>0) sprite.setTextureRect(IntRect(55*int(currentFrame),0,55,57));
-		if (dx<0) sprite.setTextureRect(IntRect(55*int(currentFrame)+55,0,-55,57));
+		currentFrame += animationspeed*time;       // animation
+		if (currentFrame > tileinanim) currentFrame -=tileinanim;
+		if (dx>0) sprite.setTextureRect(IntRect(playersize[2]*int(currentFrame),0,playersize[2],playersize[3]));
+		if (dx<0) sprite.setTextureRect(IntRect(playersize[2]*int(currentFrame)+playersize[2],0,-playersize[2],playersize[3]));
 
-		sprite.setPosition(rect.left - offsetX,rect.top - offsetY);
+		sprite.setPosition(rect.left - offsetX,rect.top - offsetY); // moving sprite in window
 		dx=0;
 	}
 
 
-	void Collision(int dir)
+	void Collision(string dir)
 	{
-		for (int i=rect.top/16; i<(rect.top+rect.height)/16; i++)
-			for (int j=rect.left/16; j<(rect.left+rect.width)/16;j++)
+		for (int i=rect.top/tilesize; i<(rect.top+rect.height)/tilesize; i++)         //checking closest tiles
+			for (int j=rect.left/tilesize; j<(rect.left+rect.width)/tilesize;j++)
 			{
 				if ((TileMap[i][j]=='P') || (TileMap[i][j]=='k') || (TileMap[i][j]=='0') || (TileMap[i][j]=='r') || (TileMap[i][j]=='T'))
 				{
-					if ((dx>0) && (dir==0)) rect.left = j*16-rect.width;
-					if ((dx<0) && (dir==0)) rect.left = j*16+16;
-					if ((dy>0) && (dir==1)) 
+					if ((dx>0) && (dir=="x")) rect.left = j*tilesize-rect.width; //X collisions
+					if ((dx<0) && (dir=="x")) rect.left = j*tilesize+tilesize;
+					if ((dy>0) && (dir=="y"))                              //Y collisions
 						{
-							rect.top = i*16-rect.height;
+							rect.top = i*tilesize-rect.height;
 							dy=0;
 							onGround=true;
 						}
-					if ((dy<0) && (dir==1))
+					if ((dy<0) && (dir=="y"))
 						{
-							rect.top = i*16+16;
+							rect.top = i*tilesize+tilesize;
 							dy=0;
 						}
 				}
@@ -104,6 +118,8 @@ float currentFrame;
 class Enemy{
 public:
 
+const float basespeed = 0.05;
+const int tileinanim = 2;
 float dx,dy;
 FloatRect rect;
 bool onGround;
@@ -114,9 +130,9 @@ bool life;
 	void set(Texture &image, int x, int y)
    {
 	sprite.setTexture(image);
-	rect = FloatRect(x,y,16,16);
+	rect = FloatRect(x,y,tilesize,tilesize);
 
-    dx=0.05;
+    dx=basespeed;
 	currentFrame = 0;
 	life=true;
    }
@@ -128,11 +144,11 @@ bool life;
      Collision();
   
 
-     currentFrame += time * 0.005;
-     if (currentFrame > 2) currentFrame -= 2;
+     currentFrame += time * animationspeed;
+     if (currentFrame > tilesinanim) currentFrame -= tileinanim;
 
-    sprite.setTextureRect(IntRect(18*int(currentFrame),0,16,16));
-    if (!life) sprite.setTextureRect(IntRect(58,0,16,16));
+    sprite.setTextureRect(IntRect(npcsize[0]*int(currentFrame),0,tilesize,tilesize));
+    if (!life) sprite.setTextureRect(IntRect(npcsize[1],0,tilesize,tilesize);
 
 
 	sprite.setPosition(rect.left - offsetX, rect.top - offsetY);
@@ -142,17 +158,17 @@ bool life;
 
    void Collision()
   {
-	for (int i = rect.top/16 ; i<(rect.top+rect.height)/16; i++)
-		for (int j = rect.left/16; j<(rect.left+rect.width)/16; j++)
+	for (int i = rect.top/tilesize ; i<(rect.top+rect.height)/tilesize; i++)
+		for (int j = rect.left/tilesize; j<(rect.left+rect.width)/tilesize; j++)
 			 if ((TileMap[i][j]=='P') || (TileMap[i][j]=='0'))
 				{ 
                   if (dx>0)
 				   { 
-						rect.left =  j*16 - rect.width; dx*=-1; 
+						rect.left =  j*tilesize - rect.width; dx*=-1; 
 				   }
 					else if (dx<0)
 					{ 
-						rect.left =  j*16 + 16;  dx*=-1; 
+						rect.left =  j*tilesize + tilesize;  dx*=-1; 
 					}
 											
 				}
@@ -162,42 +178,37 @@ bool life;
 
 int main()
 {
-	RenderWindow window( VideoMode(600,400),"Teemario");
+	RenderWindow window( VideoMode(windowW,windowH),"Teemario");
 
-	Texture t;
-	t.loadFromFile("teeto.png");
+	Texture teemo;                            //loading textures, applying them to sprites
+	teemo.loadFromFile("teeto.png");
 	Texture env;
 	env.loadFromFile("Mario_tileset.png");
-	Sprite s(env);
+	Sprite envSp(env);
 	Texture background;
 	background.loadFromFile("ar.png");
-	Sprite sq(background);
+	Sprite backSp(background);
 
-	Font font;
+	Font font;                                // preparing message
 	font.loadFromFile("1234.otf");
 	Text mytext("You killed him!",font,50);
 	mytext.setColor(Color::Red);
 	mytext.setPosition(10,10);
 
-
-	
-
-	float currentFrame=0;
-
-	Player p(t);
+	Player p(t);                              // setting up units
 	Enemy enemy;
-	enemy.set(env,48*16,21*16);
+	enemy.set(env,npcsize[2]*tilesize,npcsize[3]*tilesize);
 
 	Clock clock;
 
-	p.sprite.setTextureRect(IntRect(0,0,55,57));
+	p.sprite.setTextureRect(IntRect(0,0,playersize[3],playersize[4])); // initial texture applyment
 
 	while (window.isOpen())
 	{
 		float time = clock.getElapsedTime().asMicroseconds();
 		clock.restart();
 
-		time = time/800;
+		time = time/(windowW+windowH/2);
 
 		Event event;
 		while (window.pollEvent(event))
@@ -208,21 +219,19 @@ int main()
 
 		if (Keyboard::isKeyPressed(Keyboard::Left))
 		{
-			p.dx = -0.1;
+			p.dx = -movespeedX;
 		}
 
 		if (Keyboard::isKeyPressed(Keyboard::Right))
 		{
-			p.dx = 0.1;
-
-			
+			p.dx = movespeedX;
 		}
 
 		if (Keyboard::isKeyPressed(Keyboard::Up))
 		{
 			if (p.onGround)
 			{
-				p.dy=-0.4;
+				p.dy=-movespeedY;
 				p.onGround=false;
 			}
 		}
@@ -237,31 +246,29 @@ int main()
 			 }
 		 }
 
-		if (p.rect.left>300) offsetX = p.rect.left - 300;
-		//if (p.rect.top>200) offsetY = p.rect.top - 200;
+		if (p.rect.left>windowW/2) offsetX = p.rect.left - windowW/2;
 
 		window.clear();
-		window.draw(sq);
+		window.draw(backSp);
 		if (!enemy.life) {window.draw(mytext);}
 
 
 		for (int i=0; i<H; i++)
 			for (int j=0; j<W; j++)
 				{
-					if (TileMap[i][j]=='P') s.setTextureRect(IntRect(0,25,16,16));
+					if (TileMap[i][j]=='P') envSp.setTextureRect(IntRect(enviromentconsts[0][0],enviromentconsts[0][1],enviromentconsts[0][2],enviromentconsts[0][3]));
 					if (TileMap[i][j]=='0') continue;
 					if (TileMap[i][j]==' ') continue;
-					if (TileMap[i][j]=='C') s.setTextureRect(IntRect(27,23,64,32));
-					if (TileMap[i][j]=='T') s.setTextureRect(IntRect(0,50,32,49));
-					if (TileMap[i][j]=='k') s.setTextureRect(IntRect(0,0,16,16));
+					if (TileMap[i][j]=='C') envSp.setTextureRect(IntRect(enviromentconsts[1][0],enviromentconsts[1][1],enviromentconsts[1][2],enviromentconsts[1][3]));
+					if (TileMap[i][j]=='T') envSp.setTextureRect(IntRect(enviromentconsts[2][0],enviromentconsts[2][1],enviromentconsts[2][2],enviromentconsts[2][3]));
+					if (TileMap[i][j]=='k') envSp.setTextureRect(IntRect(enviromentconsts[3][0],enviromentconsts[3][1],enviromentconsts[3][2],enviromentconsts[3][3]));
 
-					s.setPosition(j*16-offsetX,i*16-offsetY);
-					window.draw(s);
+					envSp.setPosition(j*tilesize-offsetX,i*tilesize-offsetY);
+					window.draw(envSp);
 				}
 		window.draw(p.sprite);
 		window.draw(enemy.sprite);
 		window.display();
 	}
-
 	return 0;
 }
