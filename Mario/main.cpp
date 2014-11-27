@@ -1,9 +1,18 @@
+#include "stdafx.h"
 #include <SFML/Graphics.hpp>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <stdlib.h>
+#include <string>
 
 using namespace sf;
+using namespace std;
 
 float offsetX=0, offsetY=0;
 int tilesize=16;
+
+const int verybigNUMBER = INT_MAX/1000;
 
 const int H = 25;
 const int W = 150;
@@ -14,52 +23,28 @@ const int windowH = 400;
 const float gravitystrength = 0.0005;
 const float movespeedX = 0.1;
 const float movespeedY = 0.4;
+const float movespeedenemy = 0.05;
 const float animationspeed = 0.005;
+
+int tileinanimplayer = 7;
+int tileinanimenemy = 2;
 
 int playersize[4] = {100,64,55,57};
 int npcsize[4] = {18,58,48,21};
-int enviromentconsts[4][4] = {{0,25,16,16},{27,23,64,32},{0,50,32,49},{0,0,16,16}}
+int enviromentconsts[5][4] = {{0,25,16,16},{27,23,64,32},{0,50,32,49},{0,0,16,16},{49,66,12,36}};
 
-String TileMap[H] = {
-
-"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-"0                                                                                                                                                    0",
-"0                                                                                                                                                    0",
-"0                                                                                                                                                    0",
-"0                                                                                                                                                    0",
-"0                                                                                                                                                    0",
-"0                                                                                                                                                    0",
-"0                                                                                                                                                    0",
-"0                                                                                                                                                    0",
-"0                                                                                                                                                    0",
-"0                                                                                    C                                                               0",
-"0                   C                                  C                   C                                                                         0",
-"0                                      C                                       kk                                                                    0",
-"0                                                                             k  k    k    k                                                         0",
-"0                      C                                                      k      kkk  kkk  w                                                     0",
-"0                                                                       P     k       k    k                                                         0",
-"0                                                                      PP     k  k                                                                   0",
-"0                                                                     PPP      kk                                                                    0",
-"0                    PPPPP                                           PPPP                                                                            0",
-"0                                      T0                           PPPPP                                                                            0",
-"0G                                     00              T0          PPPPPP                               G                                            0",
-"0           P    P       P             00              00         PPPPPPP                                                                            0",
-"PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-"PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-"PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP",
-
-};
+String TileMap[H];
 
 
 class Player{
 public:
 
-const int tileinanim = 7;
 float dx,dy;
 FloatRect rect;
 bool onGround;
 Sprite sprite;
 float currentFrame;
+bool endofgame;
 
 	Player(Texture &image)                // constructor
 	{
@@ -67,6 +52,7 @@ float currentFrame;
 		rect = FloatRect(playersize[0],playersize[1],playersize[2],playersize[3]);
 		dx=dy=0;
 		currentFrame=0;
+		endofgame=false;
 	}
 
 	void update(float time)               // movements + collisions
@@ -80,7 +66,7 @@ float currentFrame;
 		Collision("y");                     // collision|Y
 		
 		currentFrame += animationspeed*time;       // animation
-		if (currentFrame > tileinanim) currentFrame -=tileinanim;
+		if (currentFrame > tileinanimplayer) currentFrame -=tileinanimplayer;
 		if (dx>0) sprite.setTextureRect(IntRect(playersize[2]*int(currentFrame),0,playersize[2],playersize[3]));
 		if (dx<0) sprite.setTextureRect(IntRect(playersize[2]*int(currentFrame)+playersize[2],0,-playersize[2],playersize[3]));
 
@@ -89,7 +75,7 @@ float currentFrame;
 	}
 
 
-	void Collision(string dir)
+	void Collision(String dir)
 	{
 		for (int i=rect.top/tilesize; i<(rect.top+rect.height)/tilesize; i++)         //checking closest tiles
 			for (int j=rect.left/tilesize; j<(rect.left+rect.width)/tilesize;j++)
@@ -110,6 +96,7 @@ float currentFrame;
 							dy=0;
 						}
 				}
+				if (TileMap[i][j]=='G') endofgame=true;
 
 			}	
 	}
@@ -118,8 +105,6 @@ float currentFrame;
 class Enemy{
 public:
 
-const float basespeed = 0.05;
-const int tileinanim = 2;
 float dx,dy;
 FloatRect rect;
 bool onGround;
@@ -132,7 +117,7 @@ bool life;
 	sprite.setTexture(image);
 	rect = FloatRect(x,y,tilesize,tilesize);
 
-    dx=basespeed;
+    dx=movespeedenemy;
 	currentFrame = 0;
 	life=true;
    }
@@ -145,10 +130,10 @@ bool life;
   
 
      currentFrame += time * animationspeed;
-     if (currentFrame > tilesinanim) currentFrame -= tileinanim;
+     if (currentFrame > tileinanimenemy) currentFrame -= tileinanimenemy;
 
     sprite.setTextureRect(IntRect(npcsize[0]*int(currentFrame),0,tilesize,tilesize));
-    if (!life) sprite.setTextureRect(IntRect(npcsize[1],0,tilesize,tilesize);
+    if (!life) sprite.setTextureRect(IntRect(npcsize[1],0,tilesize,tilesize));
 
 
 	sprite.setPosition(rect.left - offsetX, rect.top - offsetY);
@@ -180,6 +165,15 @@ int main()
 {
 	RenderWindow window( VideoMode(windowW,windowH),"Teemario");
 
+	char s[151];
+	std::ifstream cin("map.txt");
+	for (int i=0; i<H; i++)
+	{
+		cin>>s;
+		TileMap[i]=s;
+	}
+	cin.close();
+
 	Texture teemo;                            //loading textures, applying them to sprites
 	teemo.loadFromFile("teeto.png");
 	Texture env;
@@ -191,17 +185,22 @@ int main()
 
 	Font font;                                // preparing message
 	font.loadFromFile("1234.otf");
-	Text mytext("You killed him!",font,50);
-	mytext.setColor(Color::Red);
-	mytext.setPosition(10,10);
+	Text killtext("You killed him!",font,50);
+	killtext.setColor(Color::Red);
+	killtext.setPosition(10,10);
+	Text wintext("You won!",font,100);
+	wintext.setColor(Color::Blue);
+	wintext.setPosition(0,windowH/2);
+	int frames = 0;
+	
 
-	Player p(t);                              // setting up units
+	Player p(teemo);                              // setting up units
 	Enemy enemy;
 	enemy.set(env,npcsize[2]*tilesize,npcsize[3]*tilesize);
 
 	Clock clock;
 
-	p.sprite.setTextureRect(IntRect(0,0,playersize[3],playersize[4])); // initial texture applyment
+	p.sprite.setTextureRect(IntRect(0,0,playersize[2],playersize[3])); // initial texture applyment
 
 	while (window.isOpen())
 	{
@@ -238,6 +237,14 @@ int main()
 		p.update(time);
 		enemy.update(time);
 
+		if (p.endofgame) 
+			{
+				window.draw(wintext);
+				window.display();
+				while (clock.getElapsedTime().asMicroseconds()<verybigNUMBER) {}
+				window.close();
+			}
+
 		if  (p.rect.intersects( enemy.rect ) )
 		 {
 			 if (enemy.life) {
@@ -246,11 +253,11 @@ int main()
 			 }
 		 }
 
-		if (p.rect.left>windowW/2) offsetX = p.rect.left - windowW/2;
+		if (p.rect.left>windowW/2) offsetX = p.rect.left - windowW/2;  // Drawing
 
 		window.clear();
 		window.draw(backSp);
-		if (!enemy.life) {window.draw(mytext);}
+		if ((!enemy.life) && (frames<verybigNUMBER/1000)) {window.draw(killtext); frames++;}
 
 
 		for (int i=0; i<H; i++)
@@ -258,10 +265,11 @@ int main()
 				{
 					if (TileMap[i][j]=='P') envSp.setTextureRect(IntRect(enviromentconsts[0][0],enviromentconsts[0][1],enviromentconsts[0][2],enviromentconsts[0][3]));
 					if (TileMap[i][j]=='0') continue;
-					if (TileMap[i][j]==' ') continue;
+					if (TileMap[i][j]=='_') continue;
 					if (TileMap[i][j]=='C') envSp.setTextureRect(IntRect(enviromentconsts[1][0],enviromentconsts[1][1],enviromentconsts[1][2],enviromentconsts[1][3]));
 					if (TileMap[i][j]=='T') envSp.setTextureRect(IntRect(enviromentconsts[2][0],enviromentconsts[2][1],enviromentconsts[2][2],enviromentconsts[2][3]));
 					if (TileMap[i][j]=='k') envSp.setTextureRect(IntRect(enviromentconsts[3][0],enviromentconsts[3][1],enviromentconsts[3][2],enviromentconsts[3][3]));
+					if (TileMap[i][j]=='G') envSp.setTextureRect(IntRect(enviromentconsts[4][0],enviromentconsts[4][1],enviromentconsts[4][2],enviromentconsts[4][3]));
 
 					envSp.setPosition(j*tilesize-offsetX,i*tilesize-offsetY);
 					window.draw(envSp);
