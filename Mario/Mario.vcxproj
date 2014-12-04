@@ -43,12 +43,14 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>C:\SFML-2.0\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\SFML-2.0\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>sfml-graphics-s-d.lib;sfml-window-s-d.lib;sfml-system-s-d.lib;sfml-audio-s-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ForceFileOutput>
+      </ForceFileOutput>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -65,15 +67,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="consts.cpp" />
+    <ClCompile Include="enemy.cpp" />
     <ClCompile Include="main.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdafx.h</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="player.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="consts.h" />
+    <ClInclude Include="enemy.h" />
+    <ClInclude Include="player.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
